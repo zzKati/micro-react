@@ -6,7 +6,7 @@ const element = createElement(
   "div",
   null,
   createElement("h1", null, "hello"),
-  createElement("a", { href: "www.baidu.com" }, "go to baidu")
+  createElement("a", { href: "http://www.baidu.com" }, "go to baidu")
 )
 
 render(element, app)

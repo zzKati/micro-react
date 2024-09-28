@@ -8,11 +8,13 @@ type props = {
   >]?: HTMLElement[key]
 }
 
+type virtualDomProps = {
+  children: virtualChildren
+} & props
+
 interface virtualDom {
   type: elementType
-  props: {
-    children: virtualChildren
-  } & props
+  props: virtualDomProps
 }
 
 interface textDom {
@@ -27,9 +29,9 @@ interface fiber {
   dom: HTMLElement | null
   parent?: fiber
   type?: elementType | TEXT_ELEMENT
-  props: {
-    children: virtualChildren
-  }
+  props: virtualDomProps
   child?: fiber
   sibling?: fiber
+  alternate: fiber | null
+  effectTag?: "UPDATE" | "PLACEMENT" | "DELETION"
 }
