@@ -2,7 +2,10 @@ type elementType = keyof HTMLElementTagNameMap
 type childrenType = (virtualDom | string)[]
 type virtualChildren = (virtualDom | textDom)[]
 type props = {
-  [key in Exclude<keyof HTMLElement, "children">]?: HTMLElement[key]
+  [key in Exclude<
+    keyof HTMLElement & HTMLLinkElement,
+    "children"
+  >]?: HTMLElement[key]
 }
 
 interface virtualDom {

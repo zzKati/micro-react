@@ -1,4 +1,5 @@
 let nextUnitOfWork: fiber | null = null
+let wipRoot: fiber | null = null
 
 function wookLoop(deadline: IdleDeadline) {
   let shouldYield = false
@@ -6,19 +7,35 @@ function wookLoop(deadline: IdleDeadline) {
     performUnitOfWork(nextUnitOfWork)
     shouldYield = deadline.timeRemaining() < 1
   }
+  if (!nextUnitOfWork && wipRoot) {
+    commitRoot()
+  }
   requestIdleCallback(wookLoop)
+}
+
+function commitRoot() {
+  commitWork(wipRoot!)
+  wipRoot = null
+}
+
+function commitWork(fiber: fiber) {
+  if (!fiber) return
+  const parentDom = fiber.parent!.dom!
+  parentDom.appendChild(fiber.dom!)
+  if (fiber.child) {
+    commitWork(fiber.child)
+  }
+  if (fiber.sibling) {
+    commitWork(fiber.sibling)
+  }
 }
 
 requestIdleCallback(wookLoop)
 
-function performUnitOfWork(fiber: fiber): fiber {
+function performUnitOfWork(fiber: fiber): fiber | undefined {
   if (!fiber.dom) {
     // 为当前fiber创建dom
     fiber.dom = createDom(fiber)
-  }
-  if (fiber.parent) {
-    // 将 dom 将入到 parent中
-    fiber.parent.dom!.appendChild(fiber.dom!)
   }
 
   // 为 children创建fiber
@@ -75,12 +92,13 @@ function createDom(element: fiber): HTMLElement {
 }
 
 export function render(element: virtualDom | textDom, container: HTMLElement) {
-  nextUnitOfWork = {
+  wipRoot = {
     dom: container,
     props: {
       children: [element],
     },
   }
+  nextUnitOfWork = wipRoot
 }
 
 export function createElement(
