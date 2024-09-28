@@ -1,4 +1,64 @@
-export function render(element: virtualDom | textDom, container: HTMLElement) {
+let nextUnitOfWork: fiber | null = null
+
+function wookLoop(deadline: IdleDeadline) {
+  let shouldYield = false
+  while (!shouldYield && nextUnitOfWork) {
+    performUnitOfWork(nextUnitOfWork)
+    shouldYield = deadline.timeRemaining() < 1
+  }
+  requestIdleCallback(wookLoop)
+}
+
+requestIdleCallback(wookLoop)
+
+function performUnitOfWork(fiber: fiber): fiber {
+  if (!fiber.dom) {
+    // 为当前fiber创建dom
+    fiber.dom = createDom(fiber)
+  }
+  if (fiber.parent) {
+    // 将 dom 将入到 parent中
+    fiber.parent.dom!.appendChild(fiber.dom!)
+  }
+
+  // 为 children创建fiber
+  const elements = fiber.props.children
+  let index = 0
+  let prevSilibing: fiber | null = null
+  while (index < elements.length) {
+    const element = elements[index]
+
+    const newFiber: fiber = {
+      type: element.type,
+      props: element.props,
+      dom: null,
+      parent: fiber,
+    }
+
+    if (index === 0) {
+      fiber.child = newFiber
+    } else {
+      prevSilibing!.sibling = newFiber
+    }
+
+    prevSilibing = newFiber
+    index++
+  }
+
+  if (fiber.child) {
+    return fiber.child
+  }
+
+  let nextFiber = fiber
+  while (nextFiber) {
+    if (nextFiber.sibling) {
+      return nextFiber.sibling
+    }
+    nextFiber = fiber.parent!
+  }
+}
+
+function createDom(element: fiber): HTMLElement {
   const dom =
     element.type === "TEXT_ELEMENT"
       ? document.createTextNode("")
@@ -11,12 +71,16 @@ export function render(element: virtualDom | textDom, container: HTMLElement) {
     // @ts-ignore
     .forEach(name => (dom[name] = element.props[name]))
 
-  element.props.children.forEach(child => {
-    // textNode 的 children 为空，进不来这个循环 直接断言
-    render(child, dom as HTMLElement)
-  })
+  return dom
+}
 
-  container.appendChild(dom)
+export function render(element: virtualDom | textDom, container: HTMLElement) {
+  nextUnitOfWork = {
+    dom: container,
+    props: {
+      children: [element],
+    },
+  }
 }
 
 export function createElement(

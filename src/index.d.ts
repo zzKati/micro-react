@@ -1,5 +1,6 @@
 type elementType = keyof HTMLElementTagNameMap
 type childrenType = (virtualDom | string)[]
+type virtualChildren = (virtualDom | textDom)[]
 type props = {
   [key in Exclude<keyof HTMLElement, "children">]?: HTMLElement[key]
 }
@@ -7,7 +8,7 @@ type props = {
 interface virtualDom {
   type: elementType
   props: {
-    children: (virtualDom | textDom)[]
+    children: virtualChildren
   } & props
 }
 
@@ -17,4 +18,15 @@ interface textDom {
     nodeValue: string
     children: []
   }
+}
+
+interface fiber {
+  dom: HTMLElement | null
+  parent?: fiber
+  type?: elementType | TEXT_ELEMENT
+  props: {
+    children: virtualChildren
+  }
+  child?: fiber
+  sibling?: fiber
 }
